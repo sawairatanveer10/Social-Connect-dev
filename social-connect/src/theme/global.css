@@ -1,0 +1,61 @@
+.firebase-emulator-warning {
+  display: none !important;
+}
+/* Global theme for the app */
+
+/* Textareas */
+ion-textarea,
+textarea {
+  background-color: #fff !important; /* White background */
+  color: #000 !important;           /* Black text */
+  border-radius: 12px;
+  border: 1px solid #ddd;
+  padding: 12px 16px;
+  font-size: 16px;
+  outline: none;
+}
+
+/* Placeholder text */
+ion-textarea::part(native),
+textarea::placeholder {
+  color: #999;
+}
+
+/* Inputs */
+ion-input,
+input {
+  background-color: #fff !important;
+  color: #000 !important;
+  border-radius: 12px;
+  border: 1px solid #ddd;
+  padding: 12px 16px;
+  font-size: 16px;
+  outline: none;
+}
+
+ion-button.post-btn {
+  --background: linear-gradient(90deg, #ff5858, #f857a6);
+  --background-activated: linear-gradient(90deg, #f857a6, #ff5858); /* removes dark overlay on press */
+  --background-focused: linear-gradient(90deg, #ff5858, #f857a6); 
+  --background-hover: linear-gradient(90deg, #f857a6, #ff5858);
+  --ripple-color: transparent; /* removes black ripple overlay */
+  --box-shadow: 0 6px 12px rgba(255, 88, 88, 0.4);
+  border-radius: 50px;
+  font-weight: 600;
+  font-size: 16px;
+  color: #fff;
+  padding: 12px 28px;
+  outline: none;
+}
+
+ion-button.post-btn:hover {
+  transform: translateY(-2px);
+  --box-shadow: 0 12px 20px rgba(255, 88, 88, 0.5);
+}
+
+ion-button.post-btn:disabled {
+  --background: #ccc;
+  cursor: not-allowed;
+  --box-shadow: none;
+}
+

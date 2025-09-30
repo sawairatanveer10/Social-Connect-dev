@@ -1,0 +1,24 @@
+{
+  "emulators": {
+    "auth": {
+      "port": 9098
+    },
+    "firestore": {
+      "port": 8081
+    },
+    "storage": {
+      "port": 9198
+    },
+    "ui": {
+      "enabled": true,
+      "port": 4001
+    }
+  },
+  "firestore": {
+    "rules": "firestore.rules"
+  },
+  "storage": {
+    "rules": "storage.rules",
+    "directory": "./emulator-storage"
+  }
+}

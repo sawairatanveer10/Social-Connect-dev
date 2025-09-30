@@ -1,0 +1,7 @@
+{
+  "name": "social-connect",
+  "integrations": {
+    "capacitor": {}
+  },
+  "type": "react-vite"
+}

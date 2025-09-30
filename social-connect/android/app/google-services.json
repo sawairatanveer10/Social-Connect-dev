@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "854414120961",
+    "project_id": "social-connect-dev-c2065",
+    "storage_bucket": "social-connect-dev-c2065.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:854414120961:android:21830b7c9ca6eb6142c800",
+        "android_client_info": {
+          "package_name": "io.ionic.starter"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyB6wsGRpZVxF5pxWezfQZFHWWxW6qkcSEA"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
