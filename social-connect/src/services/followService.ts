@@ -1,22 +1,9 @@
 // src/services/followService.ts
-import {
-  doc,
-  runTransaction,
-  getDocs,
-  collection,
-  QuerySnapshot,
-  DocumentData,
-} from 'firebase/firestore';
+import { doc, runTransaction, getDocs, collection, QuerySnapshot, DocumentData } from 'firebase/firestore';
 import { db, serverTimestamp } from '../lib/firebase';
 
 type Id = string;
 
-/**
- * Follow user: creates
- * - users/{targetUserId}/followers/{currentUserId}
- * - users/{currentUserId}/following/{targetUserId}
- * and increments followersCount / followingCount on user docs.
- */
 export async function followUser(currentUserId: Id, targetUserId: Id) {
   if (!currentUserId || !targetUserId) throw new Error('Missing ids');
   if (currentUserId === targetUserId) throw new Error("You can't follow yourself");
@@ -27,13 +14,13 @@ export async function followUser(currentUserId: Id, targetUserId: Id) {
   const currentUserRef = doc(db, 'users', currentUserId);
 
   await runTransaction(db, async (tx) => {
-    // create subdocs
-    tx.set(followerDocRef, { id: currentUserId, createdAt: serverTimestamp() });
-    tx.set(followingDocRef, { id: targetUserId, createdAt: serverTimestamp() });
-
-    // update counts (create field if missing)
     const targetSnap = await tx.get(targetUserRef);
     const currentSnap = await tx.get(currentUserRef);
+    const followerSnap = await tx.get(followerDocRef);
+    const followingSnap = await tx.get(followingDocRef);
+
+    if (!followerSnap.exists()) tx.set(followerDocRef, { id: currentUserId, createdAt: serverTimestamp() });
+    if (!followingSnap.exists()) tx.set(followingDocRef, { id: targetUserId, createdAt: serverTimestamp() });
 
     const targetFollowers = (targetSnap.exists() && (targetSnap.data() as any).followersCount) || 0;
     const currentFollowing = (currentSnap.exists() && (currentSnap.data() as any).followingCount) || 0;
@@ -43,9 +30,6 @@ export async function followUser(currentUserId: Id, targetUserId: Id) {
   });
 }
 
-/**
- * Unfollow user: removes the two subdocs and decrements counts (bounded at 0).
- */
 export async function unfollowUser(currentUserId: Id, targetUserId: Id) {
   if (!currentUserId || !targetUserId) throw new Error('Missing ids');
   if (currentUserId === targetUserId) throw new Error("Invalid operation");
@@ -56,12 +40,13 @@ export async function unfollowUser(currentUserId: Id, targetUserId: Id) {
   const currentUserRef = doc(db, 'users', currentUserId);
 
   await runTransaction(db, async (tx) => {
-    // delete subdocs (tx.delete requires doc ref)
-    tx.delete(followerDocRef);
-    tx.delete(followingDocRef);
-
     const targetSnap = await tx.get(targetUserRef);
     const currentSnap = await tx.get(currentUserRef);
+    const followerSnap = await tx.get(followerDocRef);
+    const followingSnap = await tx.get(followingDocRef);
+
+    if (followerSnap.exists()) tx.delete(followerDocRef);
+    if (followingSnap.exists()) tx.delete(followingDocRef);
 
     const targetFollowers = Math.max(((targetSnap.exists() && (targetSnap.data() as any).followersCount) || 1) - 1, 0);
     const currentFollowing = Math.max(((currentSnap.exists() && (currentSnap.data() as any).followingCount) || 1) - 1, 0);
@@ -71,9 +56,6 @@ export async function unfollowUser(currentUserId: Id, targetUserId: Id) {
   });
 }
 
-/**
- * Return array of IDs that currentUser is following.
- */
 export async function getFollowingIds(currentUserId: Id): Promise<Id[]> {
   const col = collection(db, 'users', currentUserId, 'following');
   const snap: QuerySnapshot<DocumentData> = await getDocs(col);
