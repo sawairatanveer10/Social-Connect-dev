@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+
 import {
   IonPage,
   IonHeader,
@@ -336,28 +337,49 @@ export default Home;
 
 
 // ------------------ PostCard Component ------------------
+
+
+
+import {updateDoc } from "firebase/firestore";
+import {  deleteDoc } from "firebase/firestore";
+
 interface PostCardProps {
   post: Post;
   currentUser: User | null;
   history: any;
+  onDeletePost?: (postId: string) => void; // callback to remove post from UI
 }
 
-const PostCard: React.FC<PostCardProps> = ({ post, currentUser, history }) => {
+const PostCard: React.FC<PostCardProps> = ({ post, currentUser, history, onDeletePost }) => {
   const [userLiked, setUserLiked] = useState(false);
   const [localLikesCount, setLocalLikesCount] = useState(post.likesCount || 0);
   const [latestComments, setLatestComments] = useState<any[]>([]);
   const [commentText, setCommentText] = useState("");
   const [showCommentBox, setShowCommentBox] = useState(false);
+  const [showOptions, setShowOptions] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editedContent, setEditedContent] = useState(post.content || "");
 
-  useEffect(() => {
+  // Open options modal
+  const handlePostOptions = () => setShowOptions(true);
+
+  // Delete post
+  const deletePost = async (postId: string) => {
     if (!currentUser) return;
-    const likeDocRef = doc(db, "posts", post.id, "likes", currentUser.uid);
-    const unsub = onSnapshot(likeDocRef, (snap) => setUserLiked(snap.exists()));
-    return () => unsub();
-  }, [post.id, currentUser]);
+    const confirmDelete = window.confirm("Are you sure you want to delete this post?");
+    if (!confirmDelete) return;
 
-  useEffect(() => setLocalLikesCount(post.likesCount || 0), [post.likesCount]);
+    try {
+      const postRef = doc(db, "posts", postId);
+      await deleteDoc(postRef);
+      alert("Post deleted successfully!");
+      if (onDeletePost) onDeletePost(postId); // remove post from UI immediately
+    } catch (err) {
+      console.error("Error deleting post:", err);
+    }
+  };
 
+  // Toggle Like
   const toggleLike = async () => {
     if (!currentUser) return;
     const postRef = doc(db, "posts", post.id);
@@ -396,12 +418,17 @@ const PostCard: React.FC<PostCardProps> = ({ post, currentUser, history }) => {
     }
   };
 
+  // Listen to likes
   useEffect(() => {
-    const q = query(
-      collection(db, "posts", post.id, "comments"),
-      orderBy("createdAt", "desc"),
-      limit(2)
-    );
+    if (!currentUser) return;
+    const likeDocRef = doc(db, "posts", post.id, "likes", currentUser.uid);
+    const unsub = onSnapshot(likeDocRef, (snap) => setUserLiked(snap.exists()));
+    return () => unsub();
+  }, [post.id, currentUser]);
+
+  // Listen to latest comments
+  useEffect(() => {
+    const q = query(collection(db, "posts", post.id, "comments"), orderBy("createdAt", "desc"), limit(2));
     const unsub = onSnapshot(q, (snap) => {
       const arr = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
       setLatestComments(arr.reverse());
@@ -409,6 +436,7 @@ const PostCard: React.FC<PostCardProps> = ({ post, currentUser, history }) => {
     return () => unsub();
   }, [post.id]);
 
+  // Add comment
   const addComment = async () => {
     if (!currentUser) return;
     const text = commentText.trim();
@@ -448,91 +476,59 @@ const PostCard: React.FC<PostCardProps> = ({ post, currentUser, history }) => {
     }
   };
 
+  // Save edited post
+  const saveEdit = async () => {
+    const postRef = doc(db, "posts", post.id);
+    try {
+      await updateDoc(postRef, { content: editedContent, updatedAt: serverTimestamp() });
+      setIsEditing(false);
+    } catch (err) {
+      console.error("Edit post failed:", err);
+    }
+  };
+
   return (
-    <div
-      style={{
-        border: "1px solid #eee",
-        borderRadius: 16,
-        marginBottom: 24,
-        backgroundColor: "#fff",
-        width: 600,
-        fontFamily: "Arial, sans-serif",
-        boxShadow: "0 4px 12px rgba(0,0,0,0.08)",
-        overflow: "hidden",
-      }}
-    >
+    <div style={{ border: "1px solid #eee", borderRadius: 16, marginBottom: 24, backgroundColor: "#fff", width: 600, fontFamily: "Arial, sans-serif", boxShadow: "0 4px 12px rgba(0,0,0,0.08)", overflow: "hidden" }}>
+      
       {/* Header */}
-      <div style={{ display: "flex", alignItems: "center", padding: 12 }}>
-        <img
-          src={post.userPhoto || "https://ionicframework.com/docs/img/demos/avatar.svg"}
-          alt={post.username}
-          style={{ width: 44, height: 44, borderRadius: "50%", marginRight: 12 }}
-        />
-        <IonText
-          style={{ fontWeight: "bold", cursor: "pointer", fontSize: 15 }}
-          onClick={() => history.push(`/profile/${post.uid}`)}
-        >
-          {post.username}
-        </IonText>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: 12 }}>
+        <div style={{ display: "flex", alignItems: "center" }}>
+          <img src={post.userPhoto || "https://ionicframework.com/docs/img/demos/avatar.svg"} alt={post.username} style={{ width: 44, height: 44, borderRadius: "50%", marginRight: 12 }} />
+          <IonText style={{ fontWeight: "bold", cursor: "pointer", fontSize: 15 }} onClick={() => history.push(`/profile/${post.uid}`)}>{post.username}</IonText>
+        </div>
+
+        {/* Edit/Delete button */}
+        {currentUser?.uid === post.uid && (
+          <IonButton fill="clear" onClick={handlePostOptions} style={{ fontSize: 18, fontWeight: "bold", color: "#555" }}>⋮</IonButton>
+        )}
       </div>
 
       {/* Image */}
-      {post.imageUrl && (
-        <img
-          src={post.imageUrl}
-          alt="Post"
-          style={{ width: "100%", maxHeight: 450, objectFit: "cover" }}
-        />
-      )}
+      {post.imageUrl && <img src={post.imageUrl} alt="Post" style={{ width: "100%", maxHeight: 450, objectFit: "cover" }} />}
 
       {/* Actions */}
       <div style={{ display: "flex", alignItems: "center", padding: "10px 12px" }}>
-        <IonIcon
-          icon={userLiked ? heart : heartOutline}
-          onClick={toggleLike}
-          style={{ fontSize: 28, cursor: "pointer" }}
-        />
+        <IonIcon icon={userLiked ? heart : heartOutline} onClick={toggleLike} style={{ fontSize: 28, cursor: "pointer" }} />
         <span style={{ marginLeft: 8, fontWeight: "bold" }}>{localLikesCount} likes</span>
-
-        <IonIcon
-          icon={chatbubbleOutline}
-          style={{ fontSize: 28, cursor: "pointer", marginLeft: 18 }}
-          onClick={() => setShowCommentBox((prev) => !prev)}
-        />
+        <IonIcon icon={chatbubbleOutline} style={{ fontSize: 28, cursor: "pointer", marginLeft: 18 }} onClick={() => setShowCommentBox((prev) => !prev)} />
         <span style={{ marginLeft: 6 }}>{post.commentsCount || 0}</span>
       </div>
 
       {/* Caption */}
       <div style={{ padding: "0 12px 10px", fontSize: 14 }}>
-        <IonText
-          style={{ fontWeight: "bold", cursor: "pointer" }}
-          onClick={() => history.push(`/profile/${post.uid}`)}
-        >
-          {post.username}{" "}
-        </IonText>
+        <IonText style={{ fontWeight: "bold", cursor: "pointer" }} onClick={() => history.push(`/profile/${post.uid}`)}>{post.username} </IonText>
         {post.content}
       </div>
 
       {/* Comments */}
       <div style={{ padding: "0 12px", fontSize: 14, color: "#555" }}>
-        {latestComments.map((c) => (
-          <div key={c.id} style={{ marginBottom: 4 }}>
-            <strong>{c.username}</strong> {c.text}
-          </div>
-        ))}
+        {latestComments.map((c) => (<div key={c.id} style={{ marginBottom: 4 }}><strong>{c.username}</strong> {c.text}</div>))}
       </div>
 
       {/* Add comment */}
       {currentUser && showCommentBox && (
         <div style={{ display: "flex", padding: 8, borderTop: "1px solid #eee" }}>
-          <IonTextarea
-            value={commentText}
-            onIonInput={(e) => setCommentText(e.detail.value!)}
-            placeholder="Add a comment..."
-            autoGrow
-            rows={1}
-            style={{ flex: 1, border: "none", padding: "6px 8px", fontSize: 14, resize: "none" }}
-          />
+          <IonTextarea value={commentText} onIonInput={(e) => setCommentText(e.detail.value!)} placeholder="Add a comment..." autoGrow rows={1} style={{ flex: 1, border: "none", padding: "6px 8px", fontSize: 14, resize: "none" }} />
           <IonButton fill="clear" onClick={addComment}>Post</IonButton>
         </div>
       )}
@@ -541,6 +537,107 @@ const PostCard: React.FC<PostCardProps> = ({ post, currentUser, history }) => {
       <div style={{ padding: "6px 12px 12px", fontSize: 12, color: "#999" }}>
         {post.createdAt?.toDate ? post.createdAt.toDate().toLocaleString() : ""}
       </div>
+
+      {/* Edit/Delete Modal */}
+      {showOptions && (
+        <div style={{ position: "fixed", top: 0, left: 0, width: "100%", height: "100%", backgroundColor: "rgba(0,0,0,0.5)", display: "flex", justifyContent: "center", alignItems: "center", zIndex: 1000 }} onClick={() => setShowOptions(false)}>
+          <div style={{ width: 250, backgroundColor: "#fff", borderRadius: 12, overflow: "hidden" }} onClick={(e) => e.stopPropagation()}>
+            <button style={{ padding: "12px", width: "100%", border: "none", background: "white", cursor: "pointer" ,color:"black"}} onClick={() => { setShowOptions(false); setEditedContent(post.content || ""); setIsEditing(true); }}>Edit</button>
+            <button style={{ padding: "12px", width: "100%", border: "none", background: "white", color: "red", cursor: "pointer" }} onClick={() => { deletePost(post.id); setShowOptions(false); }}>Delete</button>
+            <button style={{ padding: "12px", width: "100%", border: "none", background: "white", cursor: "pointer", color:"blue"}} onClick={() => setShowOptions(false)}>Cancel</button>
+          </div>
+        </div>
+      )}
+
+     {/* Edit Modal */}
+{isEditing && (
+  <div
+    style={{
+      position: "fixed",
+      top: 0,
+      left: 0,
+      width: "100%",
+      height: "100%",
+      backgroundColor: "rgba(0,0,0,0.35)", // dim background
+      display: "flex",
+      justifyContent: "center",
+      alignItems: "flex-end",
+      zIndex: 1100,
+      paddingBottom: 40, // 👈 adds spacing from bottom
+    }}
+    onClick={() => setIsEditing(false)}
+  >
+    <div
+      style={{
+        width: "95%",
+        maxWidth: 500,
+        backgroundColor: "#fff",
+        borderRadius: 16, // full rounded corners
+        padding: 16,
+        marginBottom: 20, // 👈 lifts popup up from bottom
+        boxShadow: "0 -4px 12px rgba(0,0,0,0.15)",
+      }}
+      onClick={(e) => e.stopPropagation()}
+    >
+      {/* Header Row */}
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          marginBottom: 12,
+        }}
+      >
+        <button
+          style={{
+            background: "transparent",
+            border: "none",
+            color: "#555",
+            fontSize: 15,
+            cursor: "pointer",
+          }}
+          onClick={() => setIsEditing(false)}
+        >
+          Cancel
+        </button>
+
+        <span style={{ fontWeight: "bold", fontSize: 15 }}>Edit Post</span>
+
+        <button
+          style={{
+            background: "transparent",
+            border: "none",
+            color: "#007AFF",
+            fontWeight: "bold",
+            fontSize: 15,
+            cursor: "pointer",
+          }}
+          onClick={saveEdit}
+        >
+          Save
+        </button>
+      </div>
+
+      {/* Edit Area */}
+      <textarea
+        value={editedContent}
+        onChange={(e) => setEditedContent(e.target.value)}
+        style={{
+          width: "100%",
+          minHeight: 80,
+          border: "1px solid #eee",
+          borderRadius: 8,
+          padding: 10,
+          fontSize: 14,
+          resize: "none",
+          outline: "none",
+        }}
+        placeholder="Edit caption..."
+      />
+    </div>
+  </div>
+)}
+
     </div>
   );
 };
