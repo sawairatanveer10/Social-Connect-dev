@@ -1,5 +1,5 @@
 // src/services/followService.ts
-import { doc, runTransaction, getDocs, collection, QuerySnapshot, DocumentData } from 'firebase/firestore';
+import { doc, runTransaction, getDocs, collection, QuerySnapshot, DocumentData, getDoc } from 'firebase/firestore';
 import { db, serverTimestamp } from '../lib/firebase';
 
 type Id = string;
@@ -60,4 +60,11 @@ export async function getFollowingIds(currentUserId: Id): Promise<Id[]> {
   const col = collection(db, 'users', currentUserId, 'following');
   const snap: QuerySnapshot<DocumentData> = await getDocs(col);
   return snap.docs.map((d) => d.id);
+}
+
+// 🔹 New helper: check if user is already followed
+export async function isFollowingUser(currentUserId: Id, targetUserId: Id): Promise<boolean> {
+  const followingDocRef = doc(db, 'users', currentUserId, 'following', targetUserId);
+  const snap = await getDoc(followingDocRef);
+  return snap.exists();
 }

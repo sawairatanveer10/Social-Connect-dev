@@ -34,6 +34,7 @@ import {
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { useHistory, useParams } from "react-router-dom";
 import FollowButton from "../components/FollowButton";
+import { getOrCreateChat } from "../services/chatService";   // ✅ Added
 
 interface RouteParams {
   userId?: string;
@@ -116,12 +117,20 @@ const Profile: React.FC = () => {
     await uploadBytes(storageRef, file);
     const url = await getDownloadURL(storageRef);
     setPhotoURL(url);
-    await setDoc(doc(db, "users", currentUser.uid), { photoURL: url }, { merge: true });
+    await setDoc(
+      doc(db, "users", currentUser.uid),
+      { photoURL: url },
+      { merge: true }
+    );
   };
 
   const handleSave = async () => {
     if (!currentUser) return;
-    await setDoc(doc(db, "users", currentUser.uid), { name, bio }, { merge: true });
+    await setDoc(
+      doc(db, "users", currentUser.uid),
+      { name, bio },
+      { merge: true }
+    );
     alert("Profile updated!");
   };
 
@@ -160,7 +169,14 @@ const Profile: React.FC = () => {
           }}
         >
           {/* Top section: Avatar + Info */}
-          <div style={{ display: "flex", alignItems: "center", width: "100%", marginBottom: 16 }}>
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              width: "100%",
+              marginBottom: 16,
+            }}
+          >
             {/* Avatar */}
             <div style={{ position: "relative" }}>
               <IonAvatar
@@ -172,7 +188,10 @@ const Profile: React.FC = () => {
                 }}
               >
                 <img
-                  src={photoURL || "https://ionicframework.com/docs/img/demos/avatar.svg"}
+                  src={
+                    photoURL ||
+                    "https://ionicframework.com/docs/img/demos/avatar.svg"
+                  }
                   alt="Profile"
                   style={{ objectFit: "cover" }}
                 />
@@ -196,7 +215,10 @@ const Profile: React.FC = () => {
                       border: "2px solid #fff",
                     }}
                   >
-                    <IonIcon icon={addCircleOutline} style={{ color: "#fff", fontSize: 10 }} />
+                    <IonIcon
+                      icon={addCircleOutline}
+                      style={{ color: "#fff", fontSize: 10 }}
+                    />
                   </label>
                   <input
                     id="fileUpload"
@@ -221,7 +243,9 @@ const Profile: React.FC = () => {
                   />
                 ) : (
                   <>
-                    <h2 style={{ margin: 0, fontSize: 16, fontWeight: 600 }}>
+                    <h2
+                      style={{ margin: 0, fontSize: 16, fontWeight: 600 }}
+                    >
                       {profileUser?.name || "Unnamed"}
                     </h2>
                     {profileUser?.verified && (
@@ -240,16 +264,29 @@ const Profile: React.FC = () => {
                     value={bio}
                     onIonInput={(e) => setBio(e.detail.value || "")}
                     placeholder="Your bio"
-                    style={{ fontSize: 13, padding: 4, height: 50, resize: "none" }}
+                    style={{
+                      fontSize: 13,
+                      padding: 4,
+                      height: 50,
+                      resize: "none",
+                    }}
                   />
                 ) : (
                   profileUser?.bio && (
-                    <p style={{ margin: 0, fontSize: 13, color: "#555" }}>{profileUser.bio}</p>
+                    <p style={{ margin: 0, fontSize: 13, color: "#555" }}>
+                      {profileUser.bio}
+                    </p>
                   )
                 )}
               </div>
 
-              <div style={{ display: "flex", gap: 16, marginTop: 8 }}>
+              <div
+                style={{
+                  display: "flex",
+                  gap: 16,
+                  marginTop: 8,
+                }}
+              >
                 <div style={{ textAlign: "center" }}>
                   <strong>{posts.length}</strong>
                   <div style={{ fontSize: 12, color: "#555" }}>Posts</div>
@@ -264,23 +301,46 @@ const Profile: React.FC = () => {
                 </div>
               </div>
 
+              {/* Buttons */}
               <div style={{ display: "flex", gap: 6, marginTop: 8 }}>
                 {isMyProfile ? (
                   <>
-                    <IonButton style={{ flex: 1, borderRadius: 18, fontSize: 12 }} onClick={handleSave}>
+                    <IonButton
+                      style={{ flex: 1, borderRadius: 18, fontSize: 12 }}
+                      onClick={handleSave}
+                    >
                       Save
                     </IonButton>
-                    <IonButton style={{ flex: 1, borderRadius: 18, fontSize: 12 }} color="medium" onClick={handleLogout}>
+                    <IonButton
+                      style={{ flex: 1, borderRadius: 18, fontSize: 12 }}
+                      color="medium"
+                      onClick={handleLogout}
+                    >
                       <IonIcon icon={logOutOutline} /> Logout
                     </IonButton>
                   </>
                 ) : (
                   <>
-                    <FollowButton currentUserId={currentUser?.uid!} targetUserId={userId!} />
-                    <IonButton style={{ flex: 1, borderRadius: 18, fontSize: 12 }}>
+                    <FollowButton
+                      currentUserId={currentUser?.uid!}
+                      targetUserId={userId!}
+                    />
+                    <IonButton
+                      style={{ flex: 1, borderRadius: 18, fontSize: 12 }}
+                      onClick={async () => {
+                        if (!currentUser || !userId) return;
+                        const chatId = await getOrCreateChat(
+                          currentUser.uid,
+                          userId
+                        );
+                        history.push(`/chat/${chatId}`);
+                      }}
+                    >
                       <IonIcon icon={chatbubbleOutline} /> Message
                     </IonButton>
-                    <IonButton style={{ flex: 1, borderRadius: 18, fontSize: 12 }}>
+                    <IonButton
+                      style={{ flex: 1, borderRadius: 18, fontSize: 12 }}
+                    >
                       <IonIcon icon={shareOutline} /> Share
                     </IonButton>
                   </>
@@ -290,7 +350,16 @@ const Profile: React.FC = () => {
           </div>
 
           {/* Tabs */}
-          <div style={{ display: "flex", justifyContent: "space-around", width: "100%", borderTop: "1px solid #ddd", borderBottom: "1px solid #ddd", marginBottom: 8 }}>
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-around",
+              width: "100%",
+              borderTop: "1px solid #ddd",
+              borderBottom: "1px solid #ddd",
+              marginBottom: 8,
+            }}
+          >
             {["posts", "reels", "tagged"].map((tab) => (
               <div
                 key={tab}
@@ -300,7 +369,8 @@ const Profile: React.FC = () => {
                   cursor: "pointer",
                   fontWeight: activeTab === tab ? "600" : "400",
                   fontSize: 12,
-                  borderBottom: activeTab === tab ? "2px solid #000" : "none",
+                  borderBottom:
+                    activeTab === tab ? "2px solid #000" : "none",
                 }}
               >
                 {tab.charAt(0).toUpperCase() + tab.slice(1)}
@@ -310,10 +380,33 @@ const Profile: React.FC = () => {
 
           {/* Posts Grid */}
           {activeTab === "posts" && (
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 2, width: "100%" }}>
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(3,1fr)",
+                gap: 2,
+                width: "100%",
+              }}
+            >
               {posts.map((p) => (
-                <div key={p.id} style={{ width: "100%", aspectRatio: "1/1", overflow: "hidden", cursor: "pointer" }}>
-                  <img src={p.imageUrl} alt="Post" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                <div
+                  key={p.id}
+                  style={{
+                    width: "100%",
+                    aspectRatio: "1/1",
+                    overflow: "hidden",
+                    cursor: "pointer",
+                  }}
+                >
+                  <img
+                    src={p.imageUrl}
+                    alt="Post"
+                    style={{
+                      width: "100%",
+                      height: "100%",
+                      objectFit: "cover",
+                    }}
+                  />
                 </div>
               ))}
             </div>
@@ -321,8 +414,16 @@ const Profile: React.FC = () => {
 
           {/* Placeholder for other tabs */}
           {activeTab !== "posts" && (
-            <div style={{ width: "100%", padding: 16, textAlign: "center", color: "#999" }}>
-              {activeTab.charAt(0).toUpperCase() + activeTab.slice(1)} content coming soon
+            <div
+              style={{
+                width: "100%",
+                padding: 16,
+                textAlign: "center",
+                color: "#999",
+              }}
+            >
+              {activeTab.charAt(0).toUpperCase() + activeTab.slice(1)} content
+              coming soon
             </div>
           )}
         </div>
