@@ -1,0 +1,79 @@
+.search-page {
+  --background: #fff;
+}
+
+.search-title {
+  font-weight: 600;
+  font-size: 20px;
+}
+
+.search-content {
+  --background: #fafafa;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-direction: column;
+}
+
+.search-wrapper {
+  width: 100%;
+  max-width: 600px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+/* 🌟 Modern, rounded search bar */
+.custom-searchbar {
+  --background: #ffffff;
+  --border-radius: 25px;
+  --box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  --color: #333;
+  --placeholder-color: #999;
+  --icon-color: #555;
+  --clear-button-color: #555;
+  --padding-start: 16px;
+  --padding-end: 16px;
+  width: 90%;
+  max-width: 600px;
+  margin-top: 20vh;
+  font-size: 16px;
+  transition: box-shadow 0.3s ease;
+}
+
+.custom-searchbar.searchbar-has-focus {
+  --box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.25);
+}
+
+.search-results {
+  width: 90%;
+  max-width: 600px;
+  margin-top: 20px;
+}
+
+.user-item {
+  padding: 10px 12px;
+  border-radius: 12px;
+  margin-bottom: 8px;
+  background-color: #fff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+}
+
+.user-avatar {
+  width: 40px;
+  height: 40px;
+}
+
+.user-name {
+  font-weight: 500;
+  font-size: 16px;
+  margin-left: 12px;
+}
+
+.no-results {
+  margin-top: 50px;
+  text-align: center;
+  color: #888;
+  font-size: 16px;
+}
